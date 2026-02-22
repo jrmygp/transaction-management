@@ -128,3 +128,7 @@ func (s *service) MidtransWebhook(notification requests.MidtransWebhookRequest) 
 	_, err = s.repository.UpdateOrder(order)
 	return err
 }
+
+func (s *service) FindByMidtransOrderID(midtransOrderID string) (models.OrderBook, error) {
+	return s.repository.FindByMidtransOrderID(midtransOrderID)
+}

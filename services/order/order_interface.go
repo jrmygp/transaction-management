@@ -10,4 +10,5 @@ type OrderService interface {
 	BillPayment(orderID int) (models.OrderBook, error)
 	MidtransWebhook(notification requests.MidtransWebhookRequest) error
 	CheckPaymentStatus(midtransOrderID string) (string, error)
+	FindByMidtransOrderID(midtransOrderID string) (models.OrderBook, error)
 }
