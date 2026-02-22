@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/jrmygp/transaction-management/grpcclient"
 	"github.com/jrmygp/transaction-management/helper"
 	"github.com/jrmygp/transaction-management/models"
 	"github.com/jrmygp/transaction-management/repositories/hotel"
@@ -65,7 +66,6 @@ func (s *service) BillPayment(orderID int) (models.OrderBook, error) {
 
 	snapResp, err := snapClient.CreateTransaction(req)
 
-	// ⭐ SAFE error handling
 	if err != nil && (snapResp == nil || snapResp.RedirectURL == "") {
 		return order, err
 	}
@@ -131,4 +131,41 @@ func (s *service) MidtransWebhook(notification requests.MidtransWebhookRequest) 
 
 func (s *service) FindByMidtransOrderID(midtransOrderID string) (models.OrderBook, error) {
 	return s.repository.FindByMidtransOrderID(midtransOrderID)
+}
+
+func (s *service) RefundOrder(orderID int) (models.OrderBook, error) {
+	order, err := s.repository.FindOrderByID(orderID)
+	if err != nil {
+		return order, err
+	}
+
+	if order.Status == "refunded" {
+		return order, fmt.Errorf("order already refunded")
+	}
+
+	if order.Status != "paid" && order.Status != "refund_pending" {
+		return order, fmt.Errorf("order cannot be refunded")
+	}
+
+	order.Status = "refund_pending"
+	if _, err := s.repository.UpdateOrder(order); err != nil {
+		return order, err
+	}
+
+	userClient, conn, err := grpcclient.NewUserClient()
+	if err != nil {
+		return order, err
+	}
+	defer conn.Close()
+
+	_, err = userClient.RefundBalance(
+		int32(order.UserID),
+		int32(order.Bill),
+	)
+	if err != nil {
+		return order, err
+	}
+
+	order.Status = "refunded"
+	return s.repository.UpdateOrder(order)
 }

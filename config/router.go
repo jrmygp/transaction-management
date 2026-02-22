@@ -24,6 +24,6 @@ func NewRouter(hotelController *controllers.HotelController, orderController *co
 	order.POST("/bill-payment/:id", orderController.BillPayment)
 	order.POST("/midtrans-webhook", orderController.MidtransWebhook)
 	order.GET("/check-payment-status/:midtransOrderID", orderController.CheckPaymentStatus)
-
+	order.GET("/refund/:id", orderController.RefundOrder)
 	return router
 }

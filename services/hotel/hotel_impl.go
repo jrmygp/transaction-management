@@ -1,9 +1,6 @@
 package hotel
 
 import (
-	"fmt"
-
-	"github.com/jrmygp/transaction-management/grpc"
 	"github.com/jrmygp/transaction-management/models"
 	"github.com/jrmygp/transaction-management/repositories/hotel"
 	"github.com/jrmygp/transaction-management/requests"
@@ -22,17 +19,6 @@ func (s *service) CreateHotel(hotelForm requests.CreateHotelRequest) (models.Hot
 		Name:  hotelForm.Name,
 		Price: hotelForm.Price,
 	}
-
-	userClient, err := grpc.NewUserClient()
-	if err != nil {
-		panic(err)
-	}
-
-	res, err := userClient.GetUserByID(1)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("User from user-service:", res.Username)
 
 	newHotel, err := s.repository.CreateHotel(hotel)
 	return newHotel, err

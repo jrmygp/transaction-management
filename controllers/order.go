@@ -139,3 +139,29 @@ func (h *OrderController) CheckPaymentStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, webResponse)
 }
+
+func (h *OrderController) RefundOrder(c *gin.Context) {
+	orderID := c.Param("id")
+	id, err := strconv.Atoi(orderID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid ID format",
+		})
+		return
+	}
+	order, err := h.service.RefundOrder(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"errors": err.Error(),
+		})
+		return
+	}
+
+	webResponse := responses.Response{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data:   convertOrderResponse(order),
+	}
+
+	c.JSON(http.StatusOK, webResponse)
+}

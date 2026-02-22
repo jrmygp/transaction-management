@@ -1,4 +1,4 @@
-package grpc
+package grpcclient
 
 import (
 	"context"
@@ -12,15 +12,15 @@ type UserClient struct {
 	client userpb.UserServiceClient
 }
 
-func NewUserClient() (*UserClient, error) {
+func NewUserClient() (*UserClient, *grpc.ClientConn, error) {
 	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	client := userpb.NewUserServiceClient(conn)
 
-	return &UserClient{client: client}, nil
+	return &UserClient{client: client}, conn, nil
 }
 
 func (u *UserClient) GetUserByID(id int32) (*userpb.GetUserResponse, error) {
@@ -29,5 +29,19 @@ func (u *UserClient) GetUserByID(id int32) (*userpb.GetUserResponse, error) {
 
 	return u.client.GetUserByID(ctx, &userpb.GetUserRequest{
 		Id: id,
+	})
+}
+
+func (u *UserClient) RefundBalance(
+	userID int32,
+	amount int32,
+) (*userpb.EditUserResponse, error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return u.client.EditUser(ctx, &userpb.EditUserRequest{
+		UserId:          userID,
+		IncomingBalance: amount,
 	})
 }
