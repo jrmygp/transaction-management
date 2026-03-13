@@ -12,4 +12,5 @@ type OrderService interface {
 	CheckPaymentStatus(midtransOrderID string) (string, error)
 	FindByMidtransOrderID(midtransOrderID string) (models.OrderBook, error)
 	RefundOrder(orderID int) (models.OrderBook, error)
+	MarkOrderRefunded(orderID int) (models.OrderBook, error)
 }

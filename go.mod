@@ -4,11 +4,14 @@ go 1.25.0
 
 require (
 	github.com/joho/godotenv v1.5.1
+	github.com/rabbitmq/amqp091-go v1.10.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.25.10
 )
 
-require github.com/midtrans/midtrans-go v1.3.8 // indirect
+require (
+	github.com/midtrans/midtrans-go v1.3.8 // indirect
+)
 
 require (
 	github.com/bytedance/sonic v1.14.0 // indirect

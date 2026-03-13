@@ -7,6 +7,7 @@ import (
 
 	"github.com/jrmygp/transaction-management/grpcclient"
 	"github.com/jrmygp/transaction-management/helper"
+	"github.com/jrmygp/transaction-management/messaging"
 	"github.com/jrmygp/transaction-management/models"
 	"github.com/jrmygp/transaction-management/repositories/hotel"
 	"github.com/jrmygp/transaction-management/repositories/order"
@@ -19,10 +20,15 @@ import (
 type service struct {
 	repository      order.OrderRepository
 	hotelRepository hotel.HotelRepository
+	publisher       *messaging.Publisher
 }
 
-func NewService(repository order.OrderRepository, hotelRepository hotel.HotelRepository) *service {
-	return &service{repository, hotelRepository}
+func NewService(
+	repository order.OrderRepository,
+	hotelRepository hotel.HotelRepository,
+	publisher *messaging.Publisher,
+) *service {
+	return &service{repository, hotelRepository, publisher}
 }
 
 func (s *service) CreateOrder(orderForm requests.CreateOrderRequest) (models.OrderBook, error) {
@@ -152,16 +158,43 @@ func (s *service) RefundOrder(orderID int) (models.OrderBook, error) {
 		return order, err
 	}
 
-	userClient, conn, err := grpcclient.NewUserClient()
+	if s.publisher == nil {
+		userClient, conn, err := grpcclient.NewUserClient()
+		if err != nil {
+			return order, err
+		}
+		defer conn.Close()
+
+		_, err = userClient.RefundBalance(
+			int32(order.UserID),
+			int32(order.Bill),
+		)
+		if err != nil {
+			return order, err
+		}
+
+		order.Status = "refunded"
+		return s.repository.UpdateOrder(order)
+	}
+
+	err = s.publisher.PublishRefundRequested(messaging.RefundRequestedMessage{
+		OrderID:         order.ID,
+		UserID:          order.UserID,
+		Amount:          order.Bill,
+		MidtransOrderID: order.MidtransOrderID,
+		RequestedAt:     time.Now(),
+		RefundStatus:    order.Status,
+		PaymentGateway:  order.PaymentMethod,
+	})
 	if err != nil {
 		return order, err
 	}
-	defer conn.Close()
 
-	_, err = userClient.RefundBalance(
-		int32(order.UserID),
-		int32(order.Bill),
-	)
+	return order, nil
+}
+
+func (s *service) MarkOrderRefunded(orderID int) (models.OrderBook, error) {
+	order, err := s.repository.FindOrderByID(orderID)
 	if err != nil {
 		return order, err
 	}

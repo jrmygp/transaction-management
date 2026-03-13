@@ -7,4 +7,5 @@ type Hotel struct {
 	ID    int
 	Name  string
 	Price int
+	Image string
 }
